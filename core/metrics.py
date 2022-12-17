@@ -90,3 +90,23 @@ def calculate_ssim(img1, img2):
             return ssim(np.squeeze(img1), np.squeeze(img2))
     else:
         raise ValueError('Wrong input image dimensions.')
+
+def calculate_fid(real_image, generated_image):
+    # calculate mean and covariance statistics
+    result = 0
+    for i in range(3):
+        real_embeddings, generated_embeddings = real_image[:, :, i], generated_image[:, :, i]
+        real_embeddings, generated_embeddings = real_embeddings / np.max(real_embeddings), generated_embeddings / np.max(generated_embeddings)
+        mu1, sigma1 = real_embeddings.mean(axis=0), np.cov(real_embeddings, rowvar=False)
+        mu2, sigma2 = generated_embeddings.mean(axis=0), np.cov(generated_embeddings,  rowvar=False)
+        # calculate sum squared difference between means
+        ssdiff = np.sum((mu1 - mu2)**2.0)
+        # calculate sqrt of product between cov
+        covmean = scipy.linalg.sqrtm(sigma1.dot(sigma2))
+        # check and correct imaginary numbers from sqrt
+        if np.iscomplexobj(covmean):
+            covmean = covmean.real
+        # calculate score
+        fid = ssdiff + np.trace(sigma1 + sigma2 - 2.0 * covmean)
+        result += fid
+    return result
